@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kompajler</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div>
+      <h1>Super Kompajler</h1>
+      <textarea id="codeArea" rows="10" placeholder="Unos koda..."></textarea>
+      <br />
+      <button id="compileBtn">Kompajliraj</button>
+      <pre id="outputArea">Ovdje će se prikazati rezultat...</pre>
+    </div>
+
+    <script>
+      // Funkcija za kompajliranje
+      function compileCode(code) {
+        const lines = code.split("\n");
+        let resultText = "";
+
+        lines.forEach((line, index) => {
+          // Preskoci prazne linije
+          if (line.trim() === "") return;
+
+          // Razdvajanje riječi
+          const words = line.trim().replace(",", "").split(/\s+/);
+          const instruction = words[0].toUpperCase();
+
+          switch (instruction) {
+            case "MVI":
+              if (words.length !== 3) {
+                throw new Error(
+                  `Greška [linija ${index + 1}]: MVI zahtijeva 2 operanda!`
+                );
+              }
+              const reg = words[1].toUpperCase();
+              const value = parseInt(words[2], 10);
+
+              // Validacija
+              if (!["A", "B", "C", "D"].includes(reg)) {
+                throw new Error(
+                  `Greška [linija ${
+                    index + 1
+                  }]: Registar "${reg}" nije validan.`
+                );
+              }
+              if (isNaN(value)) {
+                throw new Error(
+                  `Greška [linija ${index + 1}]: Vrijednost "${
+                    words[2]
+                  }" nije broj.`
+                );
+              }
+
+              // Generišemo opkod
+              const mviOpcode =
+                reg === "A"
+                  ? 0x3e
+                  : reg === "B"
+                  ? 0x06
+                  : reg === "C"
+                  ? 0x0e
+                  : 0x16;
+
+              // Upisujemo u resultText (nema više binaryData!)
+              resultText += `MVI ${reg}, ${value} -> 0x${mviOpcode.toString(
+                16
+              )} (plus vrijednost 0x${value.toString(16)})\n`;
+              break;
+
+            case "ADD":
+              if (words.length !== 3) {
+                throw new Error(
+                  `Greška [linija ${index + 1}]: ADD zahtijeva 2 operanda!`
+                );
+              }
+              const addReg = words[2].toUpperCase();
+              if (!["A", "B", "C", "D"].includes(addReg)) {
+                throw new Error(
+                  `Greška [linija ${
+                    index + 1
+                  }]: Registar "${addReg}" nije validan.`
+                );
+              }
+
+              const addOpcode =
+                addReg === "B"
+                  ? 0x80
+                  : addReg === "C"
+                  ? 0x81
+                  : addReg === "D"
+                  ? 0x82
+                  : 0x83;
+
+              resultText += `ADD A, ${addReg} -> 0x${addOpcode.toString(16)}\n`;
+              break;
+
+            case "SUB":
+              if (words.length !== 3) {
+                throw new Error(
+                  `Greška [linija ${index + 1}]: SUB zahtijeva 2 operanda!`
+                );
+              }
+              const subReg = words[2].toUpperCase();
+              if (!["A", "B", "C", "D"].includes(subReg)) {
+                throw new Error(
+                  `Greška [linija ${
+                    index + 1
+                  }]: Registar "${subReg}" nije validan.`
+                );
+              }
+
+              const subOpcode =
+                subReg === "B"
+                  ? 0x90
+                  : subReg === "C"
+                  ? 0x91
+                  : subReg === "D"
+                  ? 0x92
+                  : 0x93;
+
+              resultText += `SUB A, ${subReg} -> 0x${subOpcode.toString(16)}\n`;
+              break;
+
+            case "MULT":
+              if (words.length !== 3) {
+                throw new Error(
+                  `Greška [linija ${index + 1}]: MULT zahtijeva 2 operanda!`
+                );
+              }
+              const multReg = words[2].toUpperCase();
+              if (!["A", "B", "C", "D"].includes(multReg)) {
+                throw new Error(
+                  `Greška [linija ${
+                    index + 1
+                  }]: Registar "${multReg}" nije validan.`
+                );
+              }
+
+              const multOpcode =
+                multReg === "B"
+                  ? 0xa0
+                  : multReg === "C"
+                  ? 0xa1
+                  : multReg === "D"
+                  ? 0xa2
+                  : 0xa3;
+
+              resultText += `MULT A, ${multReg} -> 0x${multOpcode.toString(
+                16
+              )}\n`;
+              break;
+
+            case "PRINT":
+              // Nema opkod - samo ispis
+              resultText += `PRINT -> "${words.slice(1).join(" ")}"\n`;
+              break;
+
+            default:
+              throw new Error(
+                `Greška [linija ${
+                  index + 1
+                }]: Nepoznata instrukcija "${instruction}".`
+              );
+          }
+        });
+
+        return resultText;
+      }
+
+      // Kada se klikne na Kompajliraj
+      document.getElementById("compileBtn").addEventListener("click", () => {
+        const codeText = document.getElementById("codeArea").value;
+        try {
+          const compilationResult = compileCode(codeText);
+          document.getElementById("outputArea").textContent = compilationResult;
+        } catch (err) {
+          document.getElementById("outputArea").textContent =
+            "Greška: " + err.message;
+        }
+      });
+    </script>
+  </body>
+</html>
